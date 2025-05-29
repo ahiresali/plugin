@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.autocut.cep" ExtensionBundleVersion="1.0.0"
+                  ExtensionBundleName="AutoCut" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Author><![CDATA[AutoCut Team]]></Author>
+  <Contact mailto="support@autocut.com"/>
+  <Legal><![CDATA[Copyright 2024 AutoCut. All rights reserved.]]></Legal>
+  <Abstract><![CDATA[Automatic silence detection and cutting for Premiere Pro using Whisper AI]]></Abstract>
+  
+  <ExtensionList>
+    <Extension Id="com.autocut.panel" Version="1.0.0"/>
+  </ExtensionList>
+  
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="PPRO" Version="[13.0,99.9]"/>
+    </HostList>
+    <LocaleList>
+      <Locale Code="All"/>
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="9.0"/>
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  
+  <DispatchInfoList>
+    <Extension Id="com.autocut.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/hostscript.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--allow-file-access</Parameter>
+            <Parameter>--allow-file-access-from-files</Parameter>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>AutoCut - Silence Detection</Menu>
+          <Geometry>
+            <Size>
+              <Height>600</Height>
+              <Width>320</Width>
+            </Size>
+            <MinSize>
+              <Height>400</Height>
+              <Width>300</Width>
+            </MinSize>
+            <MaxSize>
+              <Height>800</Height>
+              <Width>400</Width>
+            </MaxSize>
+          </Geometry>
+          <Icons>
+            <Icon Type="Normal">./images/icon_normal.png</Icon>
+            <Icon Type="RollOver">./images/icon_rollover.png</Icon>
+            <Icon Type="DarkNormal">./images/icon_dark_normal.png</Icon>
+            <Icon Type="DarkRollOver">./images/icon_dark_rollover.png</Icon>
+          </Icons>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

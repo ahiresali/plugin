@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoCut - Silence Detection</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <h2>AutoCut</h2>
+                <span class="version">v1.0.0</span>
+            </div>
+            <div class="subtitle">AI-Powered Silence Detection</div>
+        </div>
+
+        <!-- Main Controls -->
+        <div class="section">
+            <h3>Detection Settings</h3>
+            
+            <div class="control-group">
+                <label for="silenceThreshold">Silence Threshold (dB)</label>
+                <div class="slider-container">
+                    <input type="range" id="silenceThreshold" min="-60" max="-10" value="-40" step="1">
+                    <span id="thresholdValue">-40</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="minDuration">Minimum Silence Duration (ms)</label>
+                <div class="slider-container">
+                    <input type="range" id="minDuration" min="100" max="2000" value="500" step="100">
+                    <span id="durationValue">500</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="padding">Cut Padding (ms)</label>
+                <div class="slider-container">
+                    <input type="range" id="padding" min="0" max="500" value="100" step="50">
+                    <span id="paddingValue">100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Track Selection -->
+        <div class="section">
+            <h3>Audio Track</h3>
+            <div class="control-group">
+                <select id="audioTrack">
+                    <option value="all">All Audio Tracks</option>
+                    <option value="1">Audio Track 1</option>
+                    <option value="2">Audio Track 2</option>
+                    <option value="3">Audio Track 3</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div class="section">
+            <h3>Analysis</h3>
+            <div class="button-group">
+                <button id="analyzeBtn" class="btn btn-primary">
+                    <span class="btn-text">Analyze Silence</span>
+                    <span class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                    </span>
+                </button>
+            </div>
+            
+            <div id="analysisResults" class="results" style="display: none;">
+                <div class="result-item">
+                    <span class="label">Silence Segments Found:</span>
+                    <span id="segmentCount" class="value">0</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Total Silence Duration:</span>
+                    <span id="totalDuration" class="value">0s</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Potential Time Saved:</span>
+                    <span id="timeSaved" class="value">0s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="section">
+            <h3>Preview</h3>
+            <div id="waveformContainer" class="waveform-container">
+                <canvas id="waveformCanvas" width="280" height="60"></canvas>
+                <div id="silenceMarkers" class="silence-markers"></div>
+            </div>
+            <div class="preview-controls">
+                <button id="previewBtn" class="btn btn-secondary" disabled>Preview Cuts</button>
+                <button id="clearBtn" class="btn btn-secondary" disabled>Clear Analysis</button>
+            </div>
+        </div>
+
+        <!-- Apply Cuts Section -->
+        <div class="section">
+            <h3>Apply Changes</h3>
+            <div class="warning-box">
+                <p>⚠️ This action will modify your timeline. Make sure to save your project first.</p>
+            </div>
+            <div class="button-group">
+                <button id="applyCutsBtn" class="btn btn-danger" disabled>
+                    <span class="btn-text">Apply Cuts to Timeline</span>
+                    <span class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div id="statusText">Ready - Select sequence and click Analyze</div>
+            <div id="progressBar" class="progress-bar" style="display: none;">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Whisper Service Status -->
+        <div class="service-status">
+            <div id="whisperStatus" class="status-indicator">
+                <span class="status-dot"></span>
+                <span id="whisperStatusText">Connecting to Whisper service...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/CSInterface.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
