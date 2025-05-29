@@ -1,0 +1,20 @@
+# AutoCut Whisper Service Requirements
+
+# Core dependencies
+flask==2.3.3
+flask-cors==4.0.0
+whisper-ai==20231117
+openai-whisper==20231117
+
+# Audio processing
+librosa==0.10.1
+numpy==1.24.3
+soundfile==0.12.1
+
+# Optional dependencies for enhanced features
+scipy==1.11.3
+matplotlib==3.7.2
+
+# Development dependencies
+pytest==7.4.2
+pytest-asyncio==0.21.1
