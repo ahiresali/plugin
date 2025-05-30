@@ -124,7 +124,8 @@ function exportAudioForAnalysis(trackIndex, outputPath) {
     }
 }
 
-// Apply cuts to timeline - FIXED VERSION
+// AutoCut ExtendScript - FIXED with QE API (like JumpCut)
+// Apply cuts to timeline based on silence segments - WORKING VERSION
 function applyCutsToTimeline(silenceSegments, trackIndex, padding) {
     if (!app.project.activeSequence) {
         updateStatus("No active sequence");
@@ -132,51 +133,103 @@ function applyCutsToTimeline(silenceSegments, trackIndex, padding) {
     }
     
     try {
+        // ENABLE QE API - This is the key!
+        app.enableQE();
+        
         var segments = JSON.parse(silenceSegments);
+        var paddingSeconds = (padding || 0) / 1000;
         var sequence = app.project.activeSequence;
+        var qeSequence = qe.project.getActiveSequence();
         var cutsApplied = 0;
         
-        updateStatus("Applying " + segments.length + " cuts...");
+        updateStatus("Applying " + segments.length + " cuts with QE...");
         
-        // Sort from end to beginning to avoid position shifts
+        // Sort from end to beginning
         segments.sort(function(a, b) { return b.start - a.start; });
         
+        var time = new Time();
+        
+        // First pass: Make all razor cuts
         for (var i = 0; i < segments.length; i++) {
             var segment = segments[i];
+            var startTime = Math.max(0, segment.start - paddingSeconds);
+            var endTime = segment.end + paddingSeconds;
             
-            // Create Time objects for cutting
-            var startTime = new Time();
-            startTime.seconds = segment.start;
-            var endTime = new Time();
-            endTime.seconds = segment.end;
+            // Create timecode strings (like JumpCut does)
+            time.seconds = startTime;
+            var startTimecode = time.getFormatted(sequence.getSettings().videoFrameRate, sequence.getSettings().videoDisplayFormat);
             
-            // Apply to selected tracks
+            time.seconds = endTime;
+            var endTimecode = time.getFormatted(sequence.getSettings().videoFrameRate, sequence.getSettings().videoDisplayFormat);
+            
+            // Make razor cuts using QE API
             if (trackIndex === -1) {
                 // All audio tracks
                 for (var t = 0; t < sequence.audioTracks.numTracks; t++) {
-                    var track = sequence.audioTracks[t];
-                    track.razor(startTime);
-                    track.razor(endTime);
-                    cutsApplied++;
+                    qeSequence.getAudioTrackAt(t).razor(startTimecode);
+                    qeSequence.getAudioTrackAt(t).razor(endTimecode);
                 }
             } else if (trackIndex < sequence.audioTracks.numTracks) {
                 // Specific track
-                var track = sequence.audioTracks[trackIndex];
-                track.razor(startTime);
-                track.razor(endTime);
-                cutsApplied++;
+                qeSequence.getAudioTrackAt(trackIndex).razor(startTimecode);
+                qeSequence.getAudioTrackAt(trackIndex).razor(endTimecode);
             }
+            cutsApplied++;
         }
         
-        // Now remove the silence segments
-        removeClipsInSilenceRanges(segments, trackIndex);
+        // Second pass: Remove silence clips (with ripple delete)
+        removeQESilenceClips(segments, trackIndex, paddingSeconds, sequence);
         
         updateStatus("Applied " + cutsApplied + " cuts successfully!");
         return "true";
         
     } catch (e) {
-        updateStatus("Error: " + e.toString());
+        updateStatus("QE Error: " + e.toString());
         return "false";
+    }
+}
+
+// Remove silence clips using standard API after QE razor cuts
+function removeQESilenceClips(segments, trackIndex, paddingSeconds, sequence) {
+    try {
+        // Remove clips in silence ranges
+        for (var i = 0; i < segments.length; i++) {
+            var segment = segments[i];
+            var startTime = Math.max(0, segment.start - paddingSeconds);
+            var endTime = segment.end + paddingSeconds;
+            
+            if (trackIndex === -1) {
+                // All audio tracks
+                for (var t = 0; t < sequence.audioTracks.numTracks; t++) {
+                    removeClipsInTimeRange(sequence.audioTracks[t], startTime, endTime);
+                }
+            } else if (trackIndex < sequence.audioTracks.numTracks) {
+                // Specific track
+                removeClipsInTimeRange(sequence.audioTracks[trackIndex], startTime, endTime);
+            }
+        }
+    } catch (e) {
+        updateStatus("Remove clips error: " + e.toString());
+    }
+}
+
+// Remove clips within time range (with ripple delete like JumpCut)
+function removeClipsInTimeRange(track, startSeconds, endSeconds) {
+    try {
+        // Find and remove clips in silence range
+        for (var i = track.clips.numItems - 1; i >= 0; i--) {
+            var clip = track.clips[i];
+            var clipStart = clip.start.seconds;
+            var clipEnd = clip.end.seconds;
+            
+            // If clip is within silence range, remove with ripple
+            if (clipStart >= startSeconds && clipEnd <= endSeconds) {
+                clip.remove(true, true); // ripple delete = true, like JumpCut
+            }
+        }
+    } catch (e) {
+        // Continue with other clips
+        updateStatus("Clip remove error: " + e.toString());
     }
 }
 
