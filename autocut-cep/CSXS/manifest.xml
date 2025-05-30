@@ -55,12 +55,6 @@
               <Width>400</Width>
             </MaxSize>
           </Geometry>
-          <Icons>
-            <Icon Type="Normal">./images/icon_normal.png</Icon>
-            <Icon Type="RollOver">./images/icon_rollover.png</Icon>
-            <Icon Type="DarkNormal">./images/icon_dark_normal.png</Icon>
-            <Icon Type="DarkRollOver">./images/icon_dark_rollover.png</Icon>
-          </Icons>
         </UI>
       </DispatchInfo>
     </Extension>
