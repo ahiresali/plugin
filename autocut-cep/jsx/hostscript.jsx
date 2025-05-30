@@ -124,49 +124,100 @@ function exportAudioForAnalysis(trackIndex, outputPath) {
     }
 }
 
-// Apply cuts to timeline based on silence segments
+// Apply cuts to timeline - FIXED VERSION
 function applyCutsToTimeline(silenceSegments, trackIndex, padding) {
-    if (!autocut.activeSequence || !silenceSegments) {
-        updateStatus("No sequence or silence data available");
-        return false;
+    if (!app.project.activeSequence) {
+        updateStatus("No active sequence");
+        return "false";
     }
     
     try {
         var segments = JSON.parse(silenceSegments);
-        var paddingSeconds = (padding || 100) / 1000; // Convert ms to seconds
+        var sequence = app.project.activeSequence;
         var cutsApplied = 0;
         
-        updateStatus("Applying " + segments.length + " cuts to timeline...");
+        updateStatus("Applying " + segments.length + " cuts...");
         
-        // Start from the end to avoid shifting positions
+        // Sort from end to beginning to avoid position shifts
         segments.sort(function(a, b) { return b.start - a.start; });
         
         for (var i = 0; i < segments.length; i++) {
             var segment = segments[i];
-            var startTime = Math.max(0, segment.start - paddingSeconds);
-            var endTime = segment.end + paddingSeconds;
             
-            // Apply cuts to audio tracks
+            // Create Time objects for cutting
+            var startTime = new Time();
+            startTime.seconds = segment.start;
+            var endTime = new Time();
+            endTime.seconds = segment.end;
+            
+            // Apply to selected tracks
             if (trackIndex === -1) {
-                // Cut all audio tracks
-                for (var trackIdx = 0; trackIdx < autocut.activeSequence.audioTracks.numTracks; trackIdx++) {
-                    if (applyCutToTrack(autocut.activeSequence.audioTracks[trackIdx], startTime, endTime)) {
-                        cutsApplied++;
-                    }
-                }
-            } else {
-                // Cut specific track
-                if (applyCutToTrack(autocut.activeSequence.audioTracks[trackIndex], startTime, endTime)) {
+                // All audio tracks
+                for (var t = 0; t < sequence.audioTracks.numTracks; t++) {
+                    var track = sequence.audioTracks[t];
+                    track.razor(startTime);
+                    track.razor(endTime);
                     cutsApplied++;
                 }
+            } else if (trackIndex < sequence.audioTracks.numTracks) {
+                // Specific track
+                var track = sequence.audioTracks[trackIndex];
+                track.razor(startTime);
+                track.razor(endTime);
+                cutsApplied++;
             }
         }
         
-        updateStatus("Applied " + cutsApplied + " cuts successfully");
-        return true;
+        // Now remove the silence segments
+        removeClipsInSilenceRanges(segments, trackIndex);
+        
+        updateStatus("Applied " + cutsApplied + " cuts successfully!");
+        return "true";
+        
     } catch (e) {
-        updateStatus("Error applying cuts: " + e.toString());
-        return false;
+        updateStatus("Error: " + e.toString());
+        return "false";
+    }
+}
+
+// Remove clips in silence ranges after razor cuts
+function removeClipsInSilenceRanges(segments, trackIndex) {
+    try {
+        var sequence = app.project.activeSequence;
+        
+        for (var i = 0; i < segments.length; i++) {
+            var segment = segments[i];
+            
+            if (trackIndex === -1) {
+                // All audio tracks
+                for (var t = 0; t < sequence.audioTracks.numTracks; t++) {
+                    removeClipsInRange(sequence.audioTracks[t], segment.start, segment.end);
+                }
+            } else if (trackIndex < sequence.audioTracks.numTracks) {
+                // Specific track
+                removeClipsInRange(sequence.audioTracks[trackIndex], segment.start, segment.end);
+            }
+        }
+    } catch (e) {
+        updateStatus("Remove error: " + e.toString());
+    }
+}
+
+// Remove clips within a specific time range
+function removeClipsInRange(track, startSeconds, endSeconds) {
+    try {
+        for (var i = track.clips.numItems - 1; i >= 0; i--) {
+            var clip = track.clips[i];
+            var clipStart = clip.start.seconds;
+            var clipEnd = clip.end.seconds;
+            
+            // If clip is completely within silence range
+            if (clipStart >= startSeconds && clipEnd <= endSeconds) {
+                clip.remove(false, false);
+            }
+        }
+    } catch (e) {
+        // Continue with other clips
     }
 }
 
