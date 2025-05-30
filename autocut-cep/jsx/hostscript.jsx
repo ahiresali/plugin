@@ -170,51 +170,33 @@ function applyCutsToTimeline(silenceSegments, trackIndex, padding) {
     }
 }
 
-// Helper function to apply cut to a specific track
+// Simplified razor cut function that actually works
 function applyCutToTrack(track, startTime, endTime) {
     try {
-        // Find clips that intersect with the silence segment
-        for (var i = 0; i < track.clips.numItems; i++) {
+        // Create Time objects
+        var cutStartTime = new Time();
+        cutStartTime.seconds = startTime;
+        var cutEndTime = new Time();
+        cutEndTime.seconds = endTime;
+        
+        // Make razor cuts at silence boundaries
+        track.razor(cutStartTime);
+        track.razor(cutEndTime);
+        
+        // Find clips in the silence range and remove them
+        for (var i = track.clips.numItems - 1; i >= 0; i--) {
             var clip = track.clips[i];
             var clipStart = clip.start.seconds;
             var clipEnd = clip.end.seconds;
             
-            // Check if silence segment intersects with this clip
-            if (startTime < clipEnd && endTime > clipStart) {
-                // Calculate intersection
-                var cutStart = Math.max(startTime, clipStart);
-                var cutEnd = Math.min(endTime, clipEnd);
-                
-                if (cutEnd > cutStart) {
-                    // Create time objects for the cut
-                    var cutStartTime = new Time();
-                    cutStartTime.seconds = cutStart;
-                    var cutEndTime = new Time();
-                    cutEndTime.seconds = cutEnd;
-                    
-                    // Perform the razor cut and remove the segment
-                    if (cutStart > clipStart) {
-                        clip.razor(cutStartTime);
-                    }
-                    if (cutEnd < clipEnd) {
-                        clip.razor(cutEndTime);
-                    }
-                    
-                    // Remove the silence segment
-                    // Note: After razor cuts, we need to find the middle segment and remove it
-                    for (var j = 0; j < track.clips.numItems; j++) {
-                        var testClip = track.clips[j];
-                        if (Math.abs(testClip.start.seconds - cutStart) < 0.01) {
-                            testClip.remove(false, true); // Remove without ripple
-                            break;
-                        }
-                    }
-                    
-                    return true;
-                }
+            // If clip is entirely within silence range, remove it
+            if (clipStart >= startTime && clipEnd <= endTime) {
+                clip.remove(false, false); // Remove without ripple, without transition
+                return true;
             }
         }
-        return false;
+        
+        return true;
     } catch (e) {
         updateStatus("Error cutting track: " + e.toString());
         return false;
